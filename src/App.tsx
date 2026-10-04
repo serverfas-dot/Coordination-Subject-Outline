@@ -1,4 +1,5 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import type { FormEvent } from 'react';
 import {
   Archive, ArrowRight, BarChart3, CalendarDays, Check, ChevronDown, ClipboardList,
   CloudDownload, Download, FileText, GraduationCap, LayoutDashboard, LockKeyhole,
