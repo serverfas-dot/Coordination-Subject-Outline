@@ -31,12 +31,21 @@ const demoSubmissions: Submission[] = [
   { id: 'demo-3', teacher_name: 'Fathimath Mariyam', submission_date: '2026-10-02', option_one: { week: 'Week 2', grade: 'Grade 8', subject: 'English', topic: 'Writing with vivid details', task: 'Project work' }, option_two: { week: 'Week 2', grade: 'Grade 9', subject: 'English', topic: 'Persuasive writing', task: 'Assessment' }, status: 'Needs update', created_at: '2026-10-02T12:48:00Z' },
 ];
 
+function readStored<T>(key: string, fallback: T): T {
+  try {
+    const stored = localStorage.getItem(key);
+    return stored ? JSON.parse(stored) as T : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 function App() {
   const [view, setView] = useState<View>('public');
   const [role, setRole] = useState<Role | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [settings, setSettings] = useState<Settings>(() => ({ ...defaultSettings, ...(JSON.parse(localStorage.getItem('coordination-settings') || 'null') || {}) }));
-  const [submissions, setSubmissions] = useState<Submission[]>(() => JSON.parse(localStorage.getItem('coordination-submissions') || 'null') || demoSubmissions);
+  const [settings, setSettings] = useState<Settings>(() => ({ ...defaultSettings, ...readStored<Partial<Settings>>('coordination-settings', {}) }));
+  const [submissions, setSubmissions] = useState<Submission[]>(() => readStored<Submission[]>('coordination-submissions', demoSubmissions));
   const [toast, setToast] = useState('');
 
   useEffect(() => {
@@ -102,7 +111,7 @@ function PublicForm({ settings, onSubmit, onOpenAdmin }: { settings: Settings; o
 
 function PlanCard({ number, option, settings, onChange }: { number: number; option: TeachingOption; settings: Settings; onChange: (key: keyof TeachingOption, value: string) => void }) { const fields: { key: keyof TeachingOption; label: string; options?: string[]; placeholder?: string }[] = [{ key: 'week', label: 'Week', options: settings.weeks }, { key: 'grade', label: 'Grade', options: settings.grades }, { key: 'subject', label: 'Subject', options: settings.subjects }, { key: 'topic', label: 'Topic / theme', placeholder: 'What will students explore?' }, { key: 'task', label: 'Learning task', options: settings.tasks }]; return <div className="plan-card"><div className="plan-card-head"><div className="plan-number">0{number}</div><div><p className="eyebrow">Teaching plan {number}</p><h3>Subject outline</h3></div></div><div className="fields-grid">{fields.map((field) => <label className={`field ${field.key === 'topic' ? 'topic-field' : ''}`} key={field.key}><span>{field.label} <b>*</b></span>{field.options ? <select required value={option[field.key]} onChange={(event) => onChange(field.key, event.target.value)}><option value="">Select {field.label.toLowerCase()}</option>{field.options.map((item) => <option key={item}>{item}</option>)}</select> : <input required value={option[field.key]} placeholder={field.placeholder} onChange={(event) => onChange(field.key, event.target.value)} />}</label>)}</div></div>; }
 
-function LoginPanel({ type, onSignIn }: { type: Role; onSignIn: (role: Role) => void }) { const [username, setUsername] = useState(''); const [password, setPassword] = useState(''); const [error, setError] = useState(''); const defaultCredentials = type === 'admin' ? { username: 'admin', password: 'admin123' } : { username: 'superadmin', password: 'super123' }; const submit = (event: FormEvent) => { event.preventDefault(); const saved = JSON.parse(localStorage.getItem(`coordination-${type}-credentials`) || 'null') || defaultCredentials; const valid = username === saved.username && password === saved.password; if (valid) onSignIn(type); else setError('That username or password does not match.'); }; return <main className="login-page"><div className="login-card"><div className="login-mark"><ShieldCheck size={25} /></div><p className="eyebrow">{type === 'admin' ? 'Coordination team' : 'System owner'}</p><h1>{type === 'admin' ? 'Admin dashboard' : 'Super admin'}</h1><p>Sign in to continue to your workspace.</p><form onSubmit={submit}><label className="field"><span>Username</span><input required value={username} onChange={(event) => setUsername(event.target.value)} placeholder={defaultCredentials.username} /></label><label className="field"><span>Password</span><input required type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Enter password" /></label>{error && <div className="login-error">{error}</div>}<button className="primary-button">Continue <ArrowRight size={17} /></button></form></div></main>; }
+function LoginPanel({ type, onSignIn }: { type: Role; onSignIn: (role: Role) => void }) { const [username, setUsername] = useState(''); const [password, setPassword] = useState(''); const [error, setError] = useState(''); const defaultCredentials = type === 'admin' ? { username: 'admin', password: 'admin123' } : { username: 'superadmin', password: 'super123' }; const submit = (event: FormEvent) => { event.preventDefault(); const saved = readStored(`coordination-${type}-credentials`, defaultCredentials); const valid = username === saved.username && password === saved.password; if (valid) onSignIn(type); else setError('That username or password does not match.'); }; return <main className="login-page"><div className="login-card"><div className="login-mark"><ShieldCheck size={25} /></div><p className="eyebrow">{type === 'admin' ? 'Coordination team' : 'System owner'}</p><h1>{type === 'admin' ? 'Admin dashboard' : 'Super admin'}</h1><p>Sign in to continue to your workspace.</p><form onSubmit={submit}><label className="field"><span>Username</span><input required value={username} onChange={(event) => setUsername(event.target.value)} placeholder={defaultCredentials.username} /></label><label className="field"><span>Password</span><input required type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Enter password" /></label>{error && <div className="login-error">{error}</div>}<button className="primary-button">Continue <ArrowRight size={17} /></button></form></div></main>; }
 
 function AdminDashboard({ submissions, onStatus, onDelete, settings, onSettings }: { submissions: Submission[]; onStatus: (id: string, status: Status) => void; onDelete: (id: string) => void; settings: Settings; onSettings: (settings: Settings) => void }) {
   const [activeBar, setActiveBar] = useState<'status' | 'reports' | 'form'>('status');
