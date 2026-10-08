@@ -81,11 +81,12 @@ function App() {
   useEffect(() => {
     const loadSettings = async () => {
       if (!supabase) return;
-      const { data, error } = await supabase.from('coordination_settings').select('*').order('created_at', { ascending: false }).limit(1).maybeSingle();
+      const { data, error } = await supabase.from('coordination_settings').select('*').order('created_at', { ascending: false }).limit(1);
       if (error) return;
-      if (data) {
-        const sharedSettings: Settings = { schoolName: data.school_name, tagline: data.school_tagline, heading: data.form_heading ?? settings.heading, subheading: data.form_subheading ?? settings.subheading, teachers: data.teachers ?? settings.teachers, weeks: data.weeks ?? settings.weeks, grades: data.grades ?? settings.grades, subjects: data.subjects ?? settings.subjects, tasks: data.learning_tasks ?? settings.tasks };
-        setSettingsRowId(data.id);
+      const sharedRecord = data?.[0];
+      if (sharedRecord) {
+        const sharedSettings: Settings = { schoolName: sharedRecord.school_name, tagline: sharedRecord.school_tagline, heading: sharedRecord.form_heading ?? settings.heading, subheading: sharedRecord.form_subheading ?? settings.subheading, teachers: sharedRecord.teachers ?? settings.teachers, weeks: sharedRecord.weeks ?? settings.weeks, grades: sharedRecord.grades ?? settings.grades, subjects: sharedRecord.subjects ?? settings.subjects, tasks: sharedRecord.learning_tasks ?? settings.tasks };
+        setSettingsRowId(sharedRecord.id);
         setSettings(sharedSettings);
         localStorage.setItem('coordination-settings', JSON.stringify(sharedSettings));
         return;
