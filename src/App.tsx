@@ -53,8 +53,26 @@ function App() {
   useEffect(() => {
     const load = async () => {
       if (!supabase) return;
-      const { data } = await supabase.from('subject_submissions').select('*').order('created_at', { ascending: false });
-      if (data?.length) setSubmissions(data as Submission[]);
+      const { data, error } = await supabase.from('subject_submissions').select('*').order('created_at', { ascending: false });
+      if (error) return;
+      if (data?.length) {
+        setSubmissions(data as Submission[]);
+        localStorage.setItem('coordination-submissions', JSON.stringify(data));
+        return;
+      }
+
+      const saved = readStored<Submission[]>('coordination-submissions', []).filter((item) => !item.id.startsWith('demo-'));
+      if (!saved.length) {
+        setSubmissions([]);
+        localStorage.removeItem('coordination-submissions');
+        return;
+      }
+
+      const { data: migrated, error: migrationError } = await supabase.from('subject_submissions').insert(saved.map(({ id: _id, created_at: _createdAt, ...submission }) => submission)).select('*');
+      if (!migrationError && migrated?.length) {
+        setSubmissions(migrated as Submission[]);
+        localStorage.setItem('coordination-submissions', JSON.stringify(migrated));
+      }
     };
     void load();
   }, []);
