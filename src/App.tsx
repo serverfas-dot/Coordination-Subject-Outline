@@ -47,6 +47,7 @@ function App() {
   const [role, setRole] = useState<Role | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [settings, setSettings] = useState<Settings>(() => ({ ...defaultSettings, ...readStored<Partial<Settings>>('coordination-settings', {}) }));
+  const [settingsRowId, setSettingsRowId] = useState<string | null>(null);
   const [submissions, setSubmissions] = useState<Submission[]>(() => readStored<Submission[]>('coordination-submissions', demoSubmissions));
   const [toast, setToast] = useState('');
 
@@ -75,6 +76,26 @@ function App() {
       }
     };
     void load();
+  }, []);
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      if (!supabase) return;
+      const { data, error } = await supabase.from('coordination_settings').select('*').order('created_at', { ascending: false }).limit(1).maybeSingle();
+      if (error) return;
+      if (data) {
+        const sharedSettings: Settings = { schoolName: data.school_name, tagline: data.school_tagline, heading: data.form_heading ?? settings.heading, subheading: data.form_subheading ?? settings.subheading, teachers: data.teachers ?? settings.teachers, weeks: data.weeks ?? settings.weeks, grades: data.grades ?? settings.grades, subjects: data.subjects ?? settings.subjects, tasks: data.learning_tasks ?? settings.tasks };
+        setSettingsRowId(data.id);
+        setSettings(sharedSettings);
+        localStorage.setItem('coordination-settings', JSON.stringify(sharedSettings));
+        return;
+      }
+
+      const saved = { ...defaultSettings, ...readStored<Partial<Settings>>('coordination-settings', {}) };
+      const { data: created, error: createError } = await supabase.from('coordination_settings').insert({ school_name: saved.schoolName, school_tagline: saved.tagline, form_heading: saved.heading, form_subheading: saved.subheading, teachers: saved.teachers, weeks: saved.weeks, grades: saved.grades, subjects: saved.subjects, learning_tasks: saved.tasks }).select('id').maybeSingle();
+      if (!createError && created) setSettingsRowId(created.id);
+    };
+    void loadSettings();
   }, []);
 
   useEffect(() => {
@@ -109,7 +130,7 @@ function App() {
     <Header view={view} role={role} onNavigate={navigate} onSignOut={signOut} onMenu={() => setMobileOpen(!mobileOpen)} />
     {mobileOpen && <div className="mobile-nav"><NavLinks view={view} onNavigate={navigate} /></div>}
     {view === 'public' && <PublicForm settings={settings} onSubmit={addSubmission} onOpenAdmin={() => navigate('admin')} />}
-    {view === 'admin' && (role ? <AdminDashboard submissions={submissions} onStatus={updateSubmission} onDelete={deleteSubmission} settings={settings} onSettings={(next) => { setSettings(next); localStorage.setItem('coordination-settings', JSON.stringify(next)); setToast('Form options updated'); }} /> : <LoginPanel type="admin" onSignIn={signIn} />)}
+    {view === 'admin' && (role ? <AdminDashboard submissions={submissions} onStatus={updateSubmission} onDelete={deleteSubmission} settings={settings} onSettings={async (next) => { setSettings(next); localStorage.setItem('coordination-settings', JSON.stringify(next)); if (supabase) { const values = { school_name: next.schoolName, school_tagline: next.tagline, form_heading: next.heading, form_subheading: next.subheading, teachers: next.teachers, weeks: next.weeks, grades: next.grades, subjects: next.subjects, learning_tasks: next.tasks }; if (settingsRowId) { await supabase.from('coordination_settings').update(values).eq('id', settingsRowId); } else { const { data } = await supabase.from('coordination_settings').insert(values).select('id').maybeSingle(); if (data) setSettingsRowId(data.id); } } setToast('Form options updated'); }} /> : <LoginPanel type="admin" onSignIn={signIn} />)}
     {view === 'super' && (role === 'super' ? <SuperDashboard settings={settings} submissions={submissions} onSignOut={signOut} /> : <LoginPanel type="super" onSignIn={signIn} />)}
     {toast && <div className="toast"><CheckCircle2 size={18} />{toast}</div>}
   </div>;
