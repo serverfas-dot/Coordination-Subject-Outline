@@ -216,7 +216,7 @@ function App() {
 
   return <div className="app-shell">
     <Header view={view} role={role} onNavigate={navigate} onSignOut={signOut} onMenu={() => setMobileOpen(!mobileOpen)} />
-    {mobileOpen && <div className="mobile-nav"><NavLinks view={view} onNavigate={navigate} /></div>}
+    {mobileOpen && <div className="mobile-nav"><NavLinks view={view} onNavigate={navigate} />{role && <button className="mobile-sign-out" onClick={signOut}><LogOut size={16} /> Sign out</button>}</div>}
     {view === 'public' && <PublicForm settings={settings} onSubmit={addSubmission} onOpenAdmin={() => navigate('admin')} />}
     {view === 'admin' && (role && session ? <AdminDashboard submissions={submissions} onDelete={deleteSubmission} settings={settings} onSettings={async (next) => {
       if (supabase) {
