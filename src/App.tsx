@@ -248,18 +248,18 @@ function PublicForm({ settings, onSubmit, onOpenAdmin }: { settings: Settings; o
 function PlanCard({ number, required, option, settings, onChange }: { number: number; required: boolean; option: TeachingOption; settings: Settings; onChange: (key: keyof TeachingOption, value: string) => void }) { const fields: { key: keyof TeachingOption; label: string; options?: string[]; placeholder?: string }[] = [{ key: 'week', label: 'Week', options: settings.weeks }, { key: 'grade', label: 'Grade', options: settings.grades }, { key: 'subject', label: 'Subject', options: settings.subjects }, { key: 'topic', label: 'Topic / theme', placeholder: 'What will students explore?' }, { key: 'task', label: 'Learning task', options: settings.tasks }]; return <div className="plan-card"><div className="plan-card-head"><div className="plan-number">0{number}</div><div><p className="eyebrow">Teaching plan {number}</p><h3>Subject outline</h3></div></div><div className="fields-grid">{fields.map((field) => <label className={`field ${field.key === 'topic' ? 'topic-field' : ''}`} key={field.key}><span>{field.label} {required && <b>*</b>}</span>{field.options ? <select required={required} value={option[field.key]} onChange={(event) => onChange(field.key, event.target.value)}><option value="">Select {field.label.toLowerCase()}</option>{field.options.map((item) => <option key={item}>{item}</option>)}</select> : <input required={required} value={option[field.key]} placeholder={field.placeholder} onChange={(event) => onChange(field.key, event.target.value)} />}</label>)}</div></div>; }
 
 function LoginPanel({ type, onSignIn }: { type: Role; onSignIn: (role: Role) => void }) {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(type === 'admin' ? 'admin@gmail.com' : 'super@gmail.com');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setError('');
-    if (!supabase) { setError('Staff sign-in is unavailable right now.'); return; }
+    if (!supabase) { setError('Staff access is unavailable right now.'); return; }
     const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
     if (signInError) { setError('That email or password is not correct.'); return; }
     onSignIn(type);
   };
-  return <main className="login-page"><div className="login-card"><div className="login-mark"><ShieldCheck size={25} /></div><p className="eyebrow">Staff access</p><h1>{type === 'admin' ? 'Admin dashboard' : 'Super admin'}</h1><p>Sign in with your staff account to continue.</p><form onSubmit={submit}><label className="field"><span>Email address</span><input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="staff@example.com" /></label><label className="field"><span>Password</span><input required type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Enter your password" /></label>{error && <div className="login-error">{error}</div>}<button className="primary-button">Sign in <ArrowRight size={17} /></button></form></div></main>;
+  return <main className="login-page"><div className="login-card"><div className="login-mark"><ShieldCheck size={25} /></div><p className="eyebrow">Staff access</p><h1>{type === 'admin' ? 'Admin dashboard' : 'Super admin'}</h1><p>Sign in with your staff account to continue.</p><form onSubmit={submit}><label className="field"><span>Email address</span><input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} /></label><label className="field"><span>Password</span><input required minLength={6} type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Enter your password" /></label>{error && <div className="login-error">{error}</div>}<button className="primary-button">Sign in <ArrowRight size={17} /></button></form></div></main>;
 }
 
 function getSubmissionPlans(submission: Submission): TeachingOption[] {
