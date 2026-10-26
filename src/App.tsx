@@ -14,7 +14,7 @@ type View = 'public' | 'admin' | 'super';
 type Role = 'admin' | 'super';
 type Status = 'Pending' | 'Reviewed' | 'Needs update';
 type TeachingOption = { week: string; grade: string; subject: string; topic: string; task: string };
-type Submission = { id: string; teacher_name: string; submission_date: string; option_one: TeachingOption; option_two?: TeachingOption | null; option_three?: TeachingOption | null; status: Status; created_at: string };
+type Submission = { id: string; teacher_name: string; submission_date: string; option_one: TeachingOption; option_two?: TeachingOption | null; option_three?: TeachingOption | null; option_four?: TeachingOption | null; option_five?: TeachingOption | null; status: Status; created_at: string };
 
 type Settings = { schoolName: string; tagline: string; heading: string; subheading: string; teachers: string[]; weeks: string[]; grades: string[]; subjects: string[]; tasks: string[] };
 
@@ -201,7 +201,7 @@ function App() {
   const signOut = async () => { if (supabase) await supabase.auth.signOut(); setRole(null); setView('public'); setToast('You have been signed out'); };
   const addSubmission = async (submission: Submission) => {
     if (!supabase) throw new Error('Submission service unavailable');
-    const { error } = await supabase.from('subject_submissions').insert({ teacher_name: submission.teacher_name, submission_date: submission.submission_date, option_one: submission.option_one, option_two: submission.option_two, option_three: submission.option_three });
+    const { error } = await supabase.from('subject_submissions').insert({ teacher_name: submission.teacher_name, submission_date: submission.submission_date, option_one: submission.option_one, option_two: submission.option_two, option_three: submission.option_three, option_four: submission.option_four, option_five: submission.option_five });
     if (error) { console.error('submission save failed', error); throw new Error('Submission could not be saved'); }
     setSubmissions((current) => { const next = [submission, ...current]; localStorage.setItem('coordination-submissions', JSON.stringify(next)); return next; });
   };
@@ -249,11 +249,11 @@ function Header({ view, role, onNavigate, onSignOut, onMenu }: { view: View; rol
 function NavLinks({ view, onNavigate }: { view: View; onNavigate: (view: View) => void }) { return <><button className={view === 'public' ? 'nav-active' : ''} onClick={() => onNavigate('public')}><ClipboardList size={16} /> Submit outline</button><button className={view === 'admin' ? 'nav-active' : ''} onClick={() => onNavigate('admin')}><LayoutDashboard size={16} /> Admin dashboard</button><button className={view === 'super' ? 'nav-active' : ''} onClick={() => onNavigate('super')}><ShieldCheck size={16} /> Super admin</button></>; }
 
 function PublicForm({ settings, onSubmit, onOpenAdmin }: { settings: Settings; onSubmit: (submission: Submission) => Promise<void>; onOpenAdmin: () => void }) {
-  const [teacher, setTeacher] = useState(''); const [options, setOptions] = useState<TeachingOption[]>([{ ...emptyOption }, { ...emptyOption }, { ...emptyOption }]); const [submitted, setSubmitted] = useState(false); const [loading, setLoading] = useState(false); const [error, setError] = useState('');
+  const [teacher, setTeacher] = useState(''); const [options, setOptions] = useState<TeachingOption[]>([{ ...emptyOption }, { ...emptyOption }, { ...emptyOption }, { ...emptyOption }, { ...emptyOption }]); const [submitted, setSubmitted] = useState(false); const [loading, setLoading] = useState(false); const [error, setError] = useState('');
   const updateOption = (index: number, key: keyof TeachingOption, value: string) => setOptions((current) => current.map((option, i) => i === index ? { ...option, [key]: value } : option));
   const hasContent = (option: TeachingOption) => Object.values(option).some(Boolean);
-  const submit = async (event: FormEvent) => { event.preventDefault(); setLoading(true); setError(''); try { await onSubmit({ id: `local-${Date.now()}`, teacher_name: teacher, submission_date: new Date().toISOString().slice(0, 10), option_one: options[0], option_two: hasContent(options[1]) ? options[1] : null, option_three: hasContent(options[2]) ? options[2] : null, status: 'Pending', created_at: new Date().toISOString() }); setSubmitted(true); } catch { setError('Your outline could not be saved. Please try again.'); } finally { setLoading(false); } };
-  if (submitted) return <main className="success-page"><div className="success-card"><div className="success-icon"><Check size={30} /></div><p className="eyebrow">Submission received</p><h1>Thank you, {teacher}.</h1><p>Your subject outline has been sent to the coordination team. You can return to the form whenever you need to submit another teaching plan.</p><button className="primary-button" onClick={() => { setSubmitted(false); setTeacher(''); setOptions([{ ...emptyOption }, { ...emptyOption }, { ...emptyOption }]); }}>Submit another outline <ArrowRight size={17} /></button></div></main>;
+  const submit = async (event: FormEvent) => { event.preventDefault(); setLoading(true); setError(''); try { await onSubmit({ id: `local-${Date.now()}`, teacher_name: teacher, submission_date: new Date().toISOString().slice(0, 10), option_one: options[0], option_two: hasContent(options[1]) ? options[1] : null, option_three: hasContent(options[2]) ? options[2] : null, option_four: hasContent(options[3]) ? options[3] : null, option_five: hasContent(options[4]) ? options[4] : null, status: 'Pending', created_at: new Date().toISOString() }); setSubmitted(true); } catch { setError('Your outline could not be saved. Please try again.'); } finally { setLoading(false); } };
+  if (submitted) return <main className="success-page"><div className="success-card"><div className="success-icon"><Check size={30} /></div><p className="eyebrow">Submission received</p><h1>Thank you, {teacher}.</h1><p>Your subject outline has been sent to the coordination team. You can return to the form whenever you need to submit another teaching plan.</p><button className="primary-button" onClick={() => { setSubmitted(false); setTeacher(''); setOptions([{ ...emptyOption }, { ...emptyOption }, { ...emptyOption }, { ...emptyOption }, { ...emptyOption }]); }}>Submit another outline <ArrowRight size={17} /></button></div></main>;
   return <main className="public-page simple-public-page"><section className="simple-form-card"><div className="simple-form-heading"><div><p className="eyebrow">Weekly subject outline</p><h1>{settings.heading}</h1><p>{settings.subheading}</p></div><span className="required-label">* Required</span></div><form onSubmit={submit}><div className="teacher-row"><label className="field"><span>Teacher name <b>*</b></span><select required value={teacher} onChange={(event) => setTeacher(event.target.value)}><option value="">Choose your name</option>{settings.teachers.map((name) => <option key={name}>{name}</option>)}</select></label><label className="field"><span>Submission date</span><div className="readonly-field"><CalendarDays size={17} />{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</div></label></div>{options.map((option, index) => <PlanCard key={index} number={index + 1} required={index === 0} option={option} settings={settings} onChange={(key, value) => updateOption(index, key, value)} />)}<div className="form-footer"><p><LockKeyhole size={15} /> Your outline is shared with the school coordination team.</p>{error && <div className="login-error">{error}</div>}<button className="primary-button" disabled={loading}>{loading ? 'Sending…' : 'Submit subject outline'} <ArrowRight size={17} /></button></div></form></section><button className="staff-access" onClick={onOpenAdmin}>Staff access</button></main>;
 }
 
@@ -283,7 +283,7 @@ function LoginPanel({ type, onSignIn }: { type: Role; onSignIn: (role: Role) => 
 }
 
 function getSubmissionPlans(submission: Submission): TeachingOption[] {
-  return [submission.option_one, submission.option_two, submission.option_three].filter((plan): plan is TeachingOption => Boolean(plan));
+  return [submission.option_one, submission.option_two, submission.option_three, submission.option_four, submission.option_five].filter((plan): plan is TeachingOption => Boolean(plan));
 }
 
 function downloadSubmissionPdf(submission: Submission): void {
@@ -419,8 +419,18 @@ function StaffAccountPanel() {
     const { data, error: invokeError } = await supabase.functions.invoke('manage-staff-account', {
       body: { email: email.trim(), password: password || undefined },
     });
+    let serverMessage = typeof data?.error === 'string' ? data.error : '';
+    const errorContext = invokeError && 'context' in invokeError ? invokeError.context : null;
+    if (!serverMessage && errorContext && typeof errorContext === 'object' && 'json' in errorContext) {
+      try {
+        const responseBody = await (errorContext as Response).json() as { error?: unknown };
+        if (typeof responseBody.error === 'string') serverMessage = responseBody.error;
+      } catch {
+        serverMessage = '';
+      }
+    }
     if (invokeError || !data?.email) {
-      setError('The Admin account could not be updated. Check the email and password and try again.');
+      setError(serverMessage || invokeError?.message || 'The Admin account could not be updated. Check the email and password and try again.');
       setSaving(false);
       return;
     }
